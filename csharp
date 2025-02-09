@@ -1,0 +1,57 @@
+
+### `bot.js` Template
+
+```javascript
+const { Client, GatewayIntentBits } = require('discord.js');
+const { OpenAI } = require('openai');
+
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+    ],
+});
+
+const openai = new OpenAI({
+    apiKey: 'YOUR_OPENAI_API_KEY',  // Replace with your OpenAI API key
+});
+
+// Define a function to get a response from the AI
+async function getAiResponse(query) {
+    try {
+        const completion = await openai.chat.completions.create({
+            model: 'gpt-4o-mini', // Adjusted model for better handling of interactions
+            messages: [{ role: 'user', content: query }],  // Pass user input
+        });
+        return completion.choices[0].message.content; // Extract the AI's response
+    } catch (error) {
+        console.error('Error getting AI response:', error);
+        return 'Sorry, I couldn’t process your request!';
+    }
+}
+
+client.on('messageCreate', async (message) => {
+    if (message.author.bot) return;  // Ignore bot messages
+
+    // Check if the bot is mentioned (pinged)
+    if (message.mentions.has(client.user)) {
+        const query = message.content.replace(`<@!${client.user.id}>`, '').trim();  // Clean the message from the bot mention
+        
+        // If there's a query, process it; otherwise, ask the user to provide more details
+        if (query) {
+            try {
+                const response = await getAiResponse(query);  // Get AI response
+                message.reply(response);  // Reply with the AI's response
+            } catch (error) {
+                console.error('Error getting AI response:', error);
+                message.reply('Sorry, I couldn’t process your request!');
+            }
+        } else {
+            message.reply('Hello! I can help with a wide range of topics. What would you like assistance with today?');
+        }
+    }
+});
+
+// Log the bot in
+client.login('YOUR_DISCORD_TOKEN');  // Replace with your Discord bot token
